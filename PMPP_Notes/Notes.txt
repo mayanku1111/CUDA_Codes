@@ -153,4 +153,10 @@ All threads in the grid have access to global as well as constant memory
 * why constant memory faster than global memory??
 Using constant memory 
 
+Motivation for Constant Memory
+• Constant data: easier to build an efficient cache
+• No need to support tracking changes(dirty bit) and writing back
+• No need to support coherence
+
+
 

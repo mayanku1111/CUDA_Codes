@@ -1,6 +1,15 @@
 #include "common.h"
 #include "timer.h"
 
+#define OUTPUT_TILE_DIM 32
+__constant__float mask_c[MASK_DIM][MASK_DIM];
+__global__ void convolution_Kernel(float *input, float *output, unsigned int width, unsigned int height)
+{
+
+    int row = blockIdx.y * blockDim.y + threadIdx.y;
+    int col = blockDim.x * blockIdx.x + threadIdx.x;
+}
+
 void convolution_gpu(float mask[][MASK_DIM], float *input, float *output, unsigned int width, unsigned int height)
 {
 
@@ -24,7 +33,8 @@ void convolution_gpu(float mask[][MASK_DIM], float *input, float *output, unsign
 
     // Copy mask to constant memory
     startTime(&timer);
-    // (missing line - likely cudaMemcpyToSymbol for mask)
+
+    cudaMemcpyToSymbol(mask_c, mask, MASK_DIM * MASK_DIM * sizeof(float));
     cudaDeviceSynchronize();
     stopTime(&timer);
     printElapsedTime(timer, "Copy to GPU constant memory time");
@@ -37,4 +47,19 @@ void convolution_gpu(float mask[][MASK_DIM], float *input, float *output, unsign
     cudaDeviceSynchronize();
     stopTime(&timer);
     printElapsedTime(timer, "Kernel time", GREEN);
+
+    // Copy data from GPU
+    startTime(&timer);
+    cudaMemcpy(output, output_d, width * height * sizeof(float), cudaMemcpyDeviceToHost);
+    cudaDeviceSynchronize();
+    stopTime(&timer);
+    printElapsedTime(timer, "Copy from GPU time");
+
+    // Free GPU memory
+    startTime(&timer);
+    cudaFree(input_d);
+    cudaFree(output_d);
+    cudaDeviceSynchronize();
+    stopTime(&timer);
+    printElapsedTime(timer, "Deallocation time");
 }
