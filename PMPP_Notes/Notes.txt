@@ -1,0 +1,156 @@
+(*) How to know how many threads per SM and blocks per SM does GPU support 
+
+--- Just use cudaError_t cudaGetDeviceProperties(cudaDeviceProp* prop,
+                                                    int device)
+                                                  
+(*) For speedup , usually manually memory allocation is better than relying on unified memory     
+
+N sized matrix and shared memory tile size 
+Kernel of MatrixMatmul
+check result on CPU 
+int main{Initialize matrices , Memory allocation and launch kernel
+                then free memory }
+
+                
+# CUDA follows this rule:
+
+# Programmer defines grid and blocks. GPU runtime schedules blocks onto SMs automatically.
+
+
+After DRAM array , we talk about Memory Coalescing
+
+When threads in the same warp access consecutive memory locations in the same burst, 
+the accesses can be combined and served by one burst
+• One DRAM transaction is needed
+• Known as memory coalescing
+
+If threads in the same warp access locations not in the same burst, accesses cannot be combined
+• Multiple transactions are needed
+• Takes longer to service data to the warp
+• Sometimes called memory divergence
+
+In vector additon , Matmul, and tiled-Matmul we see memory coalescing.
+
+Manufacturing a huge DRAM array is not feasible 
+
+• Latency can be hidden by having multiple banks 
+
+• Need many threads to simultaneously access memory to keep all banks busy
+• Achieved with having high occupancy in SMs(Having more warps than they can execute in SM)
+• Similar idea to hiding pipeline latency in the core
+
+*** Thread Granulaity
+
+Fine-Grain Thread Granularity
+• Advantage: provide hardware with as many threads as possible to fully utilize resources
+• If more threads provided than GPU can support, hardware can serialize the work with low overhead
+• If future GPUs come out with more resources, they can extract more parallelism without code being rewritten
+• Recall: transparent scalability
+
+*Optimizing Tiled Matrix-Matrix Multiplication
+
+Thread blocks processing horizontally adjacent output tiles of C redundantly load the same input tile of A
+Optimization: Have one thread block process multiple output tiles sequentially and 
+                reuse the input tile that it loaded
+
+
+*PROFILING CUDA
+
+Pytorch profiler and all...have to go in detail to understand some stuffs 
+
+How to we custom cuda kernel(c++ function) into pythonn(pytorch) program 
+-- One way to do it is pybind.
+Python binding for C++ files 
+
+Easiest way to do it is load_inline function 
+
+import torch
+from torch.utils.cpp_extension import load_inline
+
+cpp_source = """
+std: :string hello_world() {.     // Path to C++ File
+    return "Hello World!";
+}
+"""
+
+my_module = load_inline(
+        name='my_module',
+        cpp_sources=[cpp_source],
+        functions=['hello_world'], 
+        verbose=True
+)
+
+print (my_module.hello_world())
+
+# Note that this was for general C++ program 
+
+# Integrating triton kernel is super easy , just have to define a function 
+
+def square(x):
+    n_rows, n_cols = x.shape
+    # The block size is the smallest power of two greater than the number of columns in 'x'
+    BLOCK_SIZE = triton. next_power_of_2(n_cols)
+    # Another trick we can use is to ask the compiler to use more threads per row by
+    # increasing the mitber of warps ("num warps') over which each row is distributed.
+    # You will see in the
+    next tutorial how to auto-tune this value in a more natural
+    # way so you don't have to come up with manual heuristics yourself.
+    num_warps = 4
+    if BLOCK_SIZE >= 2048:
+        num_warps = 8
+    if BLOCK_SIZE >= 4096:
+        num_warps = 16
+    # Allocate output
+    y = torch. empty_like (x)
+    # Enqueue kernel. The 1D launch grid is simple: we have one kernel instance per row o
+    # f the input matrix
+    square_kernell (n_rows,
+        у,
+        x,
+        x.stride(0),
+        y. stride(0), n_cols,
+        num_warps=num_warps,
+        BLOCK_SIZE-BLOCK_SIZE,
+    )
+    return y
+
+---------------------------------
+
+Triton debugger 
+triton.jit(interpret = True)
+Almost everything is a WrappedTensor so inspect variables with var_name.tensor
+
+NVIDIA Nsight Compute CLI (ncu) profiler seems best(doesn't work with cloud providers GPU)
+
+- For ML , I want as many things fused into a kernel as possible 
+
+- sum is a per-thread local variable (usually in registers). Each thread has its own independent sum since they work parallely.
+
+* Understood Threadblock swizzling , Persistent threadblocks , Output tile traversal
+* as per https://chatgpt.com/c/69a6d0d4-52bc-8322-bc27-864211ab0e4a
+
+Thread coarsening is an optimization where a thread is assigned multiple units of parallelism to process
+• i.e., a thread is made more coarse-grain
+
+*** Advantages:
+• Reduces the "price" paid for parallelization
+• Redundant memory loads in the tiled matrix multiplication
+• Could be redundant computations in other examples
+• Could be synchronization overhead or divergence (covered later)
+*** Disadvantages:
+• Underutilizes resources if coarsening factor is too high
+• Need to retune coarsening factor for each device
+• More resources per thread which may limit occupancy
+
+Tensions between optimizations , referring to /Cuda_<>/Diagrams/Common_optimizations.png
+
+
+___CONVOLUTION___
+
+Constant memory - We will store mask(convolution kernel) there.
+All threads in the grid have access to global as well as constant memory
+
+* why constant memory faster than global memory??
+Using constant memory 
+
+
