@@ -2,19 +2,38 @@
 #include "timer.h"
 
 #define OUTPUT_TILE_DIM 32
+#define MASK_RADIUS 2
+#define MASK_DIM ((MASK_RADIUS) * 2 + 1)
+
 __constant__float mask_c[MASK_DIM][MASK_DIM];
+
 __global__ void convolution_Kernel(float *input, float *output, unsigned int width, unsigned int height)
 {
 
-    int row = blockIdx.y * blockDim.y + threadIdx.y;
-    int col = blockDim.x * blockIdx.x + threadIdx.x;
+    int outRow = blockIdx.y * blockDim.y + threadIdx.y;
+    int outCol = blockDim.x * blockIdx.x + threadIdx.x;
+
+    if (outRow < height && outCol < width)
+    {
+        float sum = 0.0f;
+        for (int maskRow = 0; maskRow < MASK_DIM; ++maskRow)
+        {
+            for (int maskCol = 0; maskCol < MASK_DIM; ++maksCol)
+            {
+                int inRow = outRow - MASK_RADIUS + maskRow;
+                int inCol = outCol - MASK_RADIUS + maskCol;
+                if (..)
+                {
+                    sum += mask_c[maskRow][maskCol]
+                }
+            }
+        }
+    }
 }
 
 void convolution_gpu(float mask[][MASK_DIM], float *input, float *output, unsigned int width, unsigned int height)
 {
-
     Timer timer;
-
     // Allocate GPU memory
     startTime(&timer);
     float *input_d, *output_d;
