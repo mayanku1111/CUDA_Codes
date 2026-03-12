@@ -158,5 +158,8 @@ Motivation for Constant Memory
 • No need to support tracking changes(dirty bit) and writing back
 • No need to support coherence
 
+Tiling in Convolution 
+We see difference in Tile Sizes 
 
+* Input and output tiles have different dimensions
 
