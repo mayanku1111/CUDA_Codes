@@ -22,12 +22,13 @@ __global__ void convolution_Kernel(float *input, float *output, unsigned int wid
             {
                 int inRow = outRow - MASK_RADIUS + maskRow;
                 int inCol = outCol - MASK_RADIUS + maskCol;
-                if (..)
+                if (inRow < height && inRow >= 0 && inCol < width && inCol >= 0)
                 {
-                    sum += mask_c[maskRow][maskCol]
+                    sum += mask_c[maskRow][maskCol] * input[inRow * width + inCol]
                 }
             }
         }
+        output[outRow * width + outCol] = sum;
     }
 }
 
