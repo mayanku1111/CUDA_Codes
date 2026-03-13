@@ -144,7 +144,6 @@ Thread coarsening is an optimization where a thread is assigned multiple units o
 
 Tensions between optimizations , referring to /Cuda_<>/Diagrams/Common_optimizations.png
 
-
 ___CONVOLUTION___
 
 Constant memory - We will store mask(convolution kernel) there.
@@ -161,5 +160,21 @@ Motivation for Constant Memory
 Tiling in Convolution 
 We see difference in Tile Sizes 
 
-* Input and output tiles have different dimensions
+Challenge: Input and output tiles have different dimensions ( input tile dimension = output tile dimension + 2 × mask radius )
+Solution: Launch enough threads per block to load the input tile to shared memory, then use a subset of them to compute and store the output tile
+
+(*) Compute to Memory ratio without tiling 
+
+Operations per thread : M^2 adds + M^2 muls = 2M^2OP
+Global loads per thread : M^2 x 4B = 4M^2B
+Ratio = 0.5 OP/B
+
+* Input tile dimension = output tile dimension + 2 * mask_radius
+
+(*) Compute to Memory ratio with tiling convolution 
+
+• Considering tile dimensions: input = T, output = T-M+1
+• Operations per block: (T-M+1)^2 x 2M^2 OP
+
+
 
