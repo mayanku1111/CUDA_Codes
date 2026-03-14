@@ -105,7 +105,7 @@ def square(x):
     # Enqueue kernel. The 1D launch grid is simple: we have one kernel instance per row o
     # f the input matrix
     square_kernell (n_rows,
-        у,
+        y,
         x,
         x.stride(0),
         y. stride(0), n_cols,
@@ -179,3 +179,6 @@ Ratio = 0.5 OP/B
 Ratio = ((T-M+1)^2x2M^2OP)/(T^2x4B) = 0.5M^2(1-(M-1)/T)^2
 
 • For M=5 and T=32: 9.57 OP/B (=19x improvement!)
+
+
+
