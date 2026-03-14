@@ -175,6 +175,7 @@ Ratio = 0.5 OP/B
 
 • Considering tile dimensions: input = T, output = T-M+1
 • Operations per block: (T-M+1)^2 x 2M^2 OP
+• Global loads per block : T^2 x 4B
+Ratio = ((T-M+1)^2x2M^2OP)/(T^2x4B) = 0.5M^2(1-(M-1)/T)^2
 
-
-
+• For M=5 and T=32: 9.57 OP/B (=19x improvement!)
